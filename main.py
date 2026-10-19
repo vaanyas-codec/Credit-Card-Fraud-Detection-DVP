@@ -8,6 +8,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score,precision_score,recall_score,f1_score,confusion_matrix,ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 import seaborn as sns
+from extract_and_inject import build_dashboard_data, inject_into_dashboard
 
 #Reading the dataset and Analyzing it
 data = pd.read_csv("creditcard.csv")
@@ -206,3 +207,15 @@ dec_cmdisp.plot()
 plt.title("Confusion Matrix for Decision Tree Classifier")
 plt.show()
 
+feature_names = x_train.columns.tolist()   # lowercase x_train — matches your pipeline
+
+data = build_dashboard_data(
+    rf_model  = ran_forest,          rf_y_pred = ran_forest_y_pred,
+    lr_model  = log_rec,             lr_y_pred = log_rec_y_pred,
+    dt_model  = dec_tree,            dt_y_pred = dec_tree_y_pred,
+    y_test    = y_test,
+    x_test    = x_test,              # ← added for real fraud alerts
+    feature_names = feature_names
+)
+
+inject_into_dashboard(data)
