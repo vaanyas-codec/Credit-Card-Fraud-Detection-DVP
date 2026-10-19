@@ -129,3 +129,20 @@ Note: Due to class imbalance, precision, recall, and F1 score are more important
 
 ## Author
 Vansh Hardwani
+Vaanya Kshatriya
+
+## Reproducing the paper
+
+1. Download `creditcard.csv` from Kaggle (mlg-ulb/creditcardfraud) into this folder.
+2. Install the dependencies: `pip install -r requirements.txt`
+3. Figures 1-4: `python make_figures.py creditcard.csv`
+4. Tables II-IV (hold-out, 5-fold CV, ablations): `python reproduce_tables.py creditcard.csv`
+5. Tables V-VI (leakage experiment, temporal validation):
+   `python run_full_experiments.py creditcard.csv`, then `python summarize_results.py`.
+   Raw results from our run are in `full_results.jsonl`.
+
+The scripts import `leakage_and_temporal_experiments.py`, so keep all files in the same folder.
+
+The leaky scenarios in `leakage_and_temporal_experiments.py` are deliberate methodological
+demonstrations; their scores are invalid and are labelled as such in the paper.
+Tree-based scores can differ slightly across library versions and platforms.
