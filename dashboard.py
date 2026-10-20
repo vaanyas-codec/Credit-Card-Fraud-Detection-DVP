@@ -37,6 +37,9 @@ def build_pipeline(csv_path):
     x_test["Hour"] = (x_test["Time"] % 86400) // 3600
     x_train["Day"] = x_train["Time"] // 86400
     x_test["Day"] = x_test["Time"] // 86400
+    # Raw (unscaled) hour index and day, kept only for display; the models use the scaled columns.
+    raw_train = x_train[["Hour", "Day"]].copy()
+    raw_test = x_test[["Hour", "Day"]].copy()
     x_train.drop(columns=["Time"], inplace=True)
     x_test.drop(columns=["Time"], inplace=True)
 
@@ -86,12 +89,16 @@ def build_pipeline(csv_path):
     test_display["Original Amount"] = df.loc[x_test.index, "Amount"]
     test_display["Original Time"] = df.loc[x_test.index, "Time"]
     test_display["Actual Class"] = y_test
+    test_display["Raw Hour"] = raw_test["Hour"]
+    test_display["Raw Day"] = raw_test["Day"]
     for name in models:
         test_display[f"{name} Prediction"] = predictions[name]
         test_display[f"{name} Fraud Probability"] = probabilities[name]
 
     train_display = x_train.copy()
     train_display["Class"] = y_train
+    train_display["Raw Hour"] = raw_train["Hour"]
+    train_display["Raw Day"] = raw_train["Day"]
 
     return {
         "df": df,
@@ -167,8 +174,8 @@ with tab1:
 
     st.subheader("Fraud probability by hour")
     train = d["train_display"].copy()
-    hourly = train.groupby("Hour", as_index=False)["Class"].mean().rename(columns={"Class":"Fraud Probability"})
-    hourly["Hour"] = hourly["Hour"].round().astype(int)
+    hourly = train.groupby("Raw Hour", as_index=False)["Class"].mean().rename(columns={"Class":"Fraud Probability", "Raw Hour":"Hour"})
+    hourly["Hour"] = hourly["Hour"].astype(int)
     fig = px.line(hourly, x="Hour", y="Fraud Probability", markers=True, title="Observed Fraud Probability by Hour")
     fig.update_yaxes(tickformat=".2%")
     st.plotly_chart(fig, use_container_width=True)
@@ -185,12 +192,13 @@ with tab2:
     st.subheader("When does fraud happen?")
     col1, col2 = st.columns(2)
     with col1:
-        fraud_hour = train.groupby("Hour", as_index=False)["Class"].sum().rename(columns={"Class":"Fraud Count"})
-        fraud_hour["Hour"] = fraud_hour["Hour"].round().astype(int)
+        fraud_hour = train.groupby("Raw Hour", as_index=False)["Class"].sum().rename(columns={"Class":"Fraud Count", "Raw Hour":"Hour"})
+        fraud_hour["Hour"] = fraud_hour["Hour"].astype(int)
         fig = px.bar(fraud_hour, x="Hour", y="Fraud Count", title="Fraud Transactions by Hour")
         st.plotly_chart(fig, use_container_width=True)
     with col2:
-        fraud_day = train.groupby("Day", as_index=False)["Class"].sum().rename(columns={"Class":"Fraud Count"})
+        fraud_day = train.groupby("Raw Day", as_index=False)["Class"].sum().rename(columns={"Class":"Fraud Count", "Raw Day":"Day"})
+        fraud_day["Day"] = fraud_day["Day"].astype(int)
         fig = px.bar(fraud_day, x="Day", y="Fraud Count", title="Fraud Transactions by Day")
         st.plotly_chart(fig, use_container_width=True)
 
@@ -248,7 +256,7 @@ with tab4:
     a.metric("Original Amount", f"{row['Original Amount']:.2f}")
     b.metric("Actual Class", "FRAUD" if row["Actual Class"] == 1 else "NORMAL")
     b.metric("Original Time", f"{row['Original Time']:.0f}")
-    c.metric("Derived Hour", f"{int(round(row['Hour']))}")
+    c.metric("Derived Hour", f"{int(row['Raw Hour'])}")
 
     st.markdown("### Model verdicts")
     verdict_cols = st.columns(3)
